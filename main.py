@@ -1,6 +1,7 @@
+from itertools import combinations
+
 import numpy as np
 
-from itertools import combinations
 
 def ref(matrix):
     """Преобразуем матрицу в формат numpy для удобной работы"""
@@ -29,7 +30,6 @@ def ref(matrix):
     return mat
 
 
-
 def rref(matrix):
     """Приводим матрицу к приведённому ступенчатому виду"""
     matrix = ref(matrix)
@@ -50,9 +50,8 @@ def rref(matrix):
     return matrix
 
 
-
 def find_lead_columns(matrix):
-    """Cоздаем сокращенную матрицу"""
+    """Создаём сокращенную матрицу"""
     lead_columns = []
     for r in range(len(matrix)):
         row = matrix[r]
@@ -63,7 +62,6 @@ def find_lead_columns(matrix):
     return lead_columns
 
 
-
 def remove_lead_columns(matrix, lead_columns):
     """Удаление ведущих столбцов"""
     mat = np.array(matrix)
@@ -71,76 +69,75 @@ def remove_lead_columns(matrix, lead_columns):
     return reduced_matrix
 
 
-def form_H_matrix(X, lead_columns, n_cols):
+def form_h_matrix(x, lead_columns, n_cols):
     """Формирование матрицы H"""
-    n_rows = np.shape(X)[1]
+    n_rows = np.shape(x)[1]
 
-    H = np.zeros((n_cols, n_rows), dtype=int)
-    I = np.eye(6, dtype=int)
+    h = np.zeros((n_cols, n_rows), dtype=int)
+    i = np.eye(6, dtype=int)
 
-    H[lead_columns, :] = X
+    h[lead_columns, :] = x
     not_lead = [i for i in range(n_cols) if i not in lead_columns]
-    H[not_lead, :] = I
+    h[not_lead, :] = i
 
-    return H
+    return h
 
 
-def LinearCode(mat):
+def linear_code(mat):
     """Основная функция для выполнения всех шагов"""
-    G_star = rref(mat)
+    g_star = rref(mat)
 
     print("G* (RREF матрица) =")
-    print(G_star)
+    print(g_star)
 
-
-    lead_columns = find_lead_columns(G_star)
+    lead_columns = find_lead_columns(g_star)
     print(f"lead = {lead_columns}")
 
-    X = remove_lead_columns(G_star, lead_columns)
+    x = remove_lead_columns(g_star, lead_columns)
     print("Сокращённая матрица X =")
-    print(X)
+    print(x)
     n_cols = np.shape(mat)[1]
-    H = form_H_matrix(X, lead_columns, n_cols)
+    h = form_h_matrix(x, lead_columns, n_cols)
     print("Проверочная матрица H =")
-    print(H)
+    print(h)
 
-    return H
-
-
+    return h
 
 
-def generate_codewords_from_combinations(G):
+def generate_codewords_from_combinations(g):
     """Нахождения все кодовые слов из порождающей матрицы"""
-    rows = G.shape[0]
+    rows = g.shape[0]
     codewords = set()
 
     # Перебираем все возможные комбинации строк матрицы G
     for r in range(1, rows + 1):
         for comb in combinations(range(rows), r):
             # Суммируем строки и добавляем результат в множество
-            codeword = np.bitwise_xor.reduce(G[list(comb)], axis=0)
+            codeword = np.bitwise_xor.reduce(g[list(comb)], axis=0)
             codewords.add(tuple(codeword))
 
     # Добавляем в множество нулевой вектор
-    codewords.add(tuple(np.zeros(G.shape[1], dtype=int)))
+    codewords.add(tuple(np.zeros(g.shape[1], dtype=int)))
 
     return np.array(list(codewords))
 
-def generate_codewords_binary_multiplication(G):
+
+def generate_codewords_binary_multiplication(g):
     """Функция для умножения всех двоичных слов длины k на G"""
-    k = G.shape[0]
-    n = G.shape[1]
+    k = g.shape[0]
     codewords = []
-    for i in range(2**k):
+    for i in range(2 ** k):
         binary_word = np.array(list(np.binary_repr(i, k)), dtype=int)
-        codeword = np.dot(binary_word, G) % 2
+        codeword = np.dot(binary_word, g) % 2
         codewords.append(codeword)
 
     return np.array(codewords)
 
-def check_codeword(codeword, H):
+
+def check_codeword(codeword, h):
     """Проверка кодового слова с помощью проверочной матрицы H"""
-    return np.dot(codeword, H) % 2
+    return np.dot(codeword, h) % 2
+
 
 def calculate_code_distance(codewords):
     """Вычисление кодового расстояния"""
@@ -155,34 +152,35 @@ def calculate_code_distance(codewords):
 
     return min_distance
 
-def LinearCodeWithErrors(mat):
+
+def linear_code_with_errors(mat):
     """Основная функция для выполнения всех шагов"""
     # Выполнение шагов, как и ранее
-    G_star = rref(mat)
-    lead_columns = find_lead_columns(G_star)
-    X = remove_lead_columns(G_star, lead_columns)
+    g_star = rref(mat)
+    lead_columns = find_lead_columns(g_star)
+    x = remove_lead_columns(g_star, lead_columns)
     n_cols = np.shape(mat)[1]
-    H = form_H_matrix(X, lead_columns, n_cols)
+    h = form_h_matrix(x, lead_columns, n_cols)
 
     print("G* (RREF матрица) =")
-    print(G_star)
+    print(g_star)
     print(f"lead = {lead_columns}")
     print("Сокращённая матрица X =")
-    print(X)
+    print(x)
     print("Проверочная матрица H =")
-    print(H)
+    print(h)
 
-    codewords_1 = generate_codewords_from_combinations(G_star)
+    codewords_1 = generate_codewords_from_combinations(g_star)
     print("Все кодовые слова (способ 1):")
     print(codewords_1)
 
-    codewords_2 = generate_codewords_binary_multiplication(G_star)
+    codewords_2 = generate_codewords_binary_multiplication(g_star)
     print("Все кодовые слова (способ 2):")
     print(codewords_2)
 
     assert set(map(tuple, codewords_1)) == set(map(tuple, codewords_2)), "Наборы кодовых слов не совпадают!"
     for codeword in codewords_1:
-        result = check_codeword(codeword, H)
+        result = check_codeword(codeword, h)
         assert np.all(result == 0), f"Ошибка: кодовое слово {codeword} не прошло проверку матрицей H"
 
     print("Все кодовые слова прошли проверку матрицей H.")
@@ -202,7 +200,7 @@ def LinearCodeWithErrors(mat):
     print(f"v = {v}")
     v_e1 = (v + e1) % 2
     print(f"v + e1 = {v_e1}")
-    print(f"(v + e1)@H = {check_codeword(v_e1, H)} - error")
+    print(f"(v + e1)@H = {check_codeword(v_e1, h)} - error")
 
     e2 = np.zeros(n_cols, dtype=int)
     e2[6] = 1
@@ -210,16 +208,21 @@ def LinearCodeWithErrors(mat):
     print(f"e2 = {e2}")
     v_e2 = (v + e2) % 2
     print(f"v + e2 = {v_e2}")
-    print(f"(v + e2)@H = {check_codeword(v_e2, H)} - no error")
+    print(f"(v + e2)@H = {check_codeword(v_e2, h)} - no error")
 
-    return H
+    return h
+
+
+def main():
+    matrix = ([[1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1],
+               [0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0],
+               [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+               [1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1],
+               [0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0],
+               [1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0]])
+    result = linear_code_with_errors(matrix)
+    print(result)
+
 
 if __name__ == "__main__":
-    matrix = ([[1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1],
-           [0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0],
-           [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-           [1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1],
-           [0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0],
-           [1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0]])
-    result = LinearCodeWithErrors(matrix)
-
+    main()
